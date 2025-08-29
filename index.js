@@ -26,22 +26,12 @@ client.on("messageCreate", async (msg) => {
     let query = args.slice(1).join(" ");
     if (!query) return msg.reply("⚠️ ใส่ชื่อเพลงหรือ URL ด้วยครับ");
 
-    const searchResult = await player.search(query, {
-      requestedBy: msg.author
-    });
-
+    const searchResult = await player.search(query, { requestedBy: msg.author });
     if (!searchResult || !searchResult.tracks.length) return msg.reply("❌ ไม่เจอเพลงนี้");
 
-    const queue = await player.nodes.create(msg.guild, {
-      metadata: msg.channel
-    });
-
-    try {
-      if (!queue.connection) await queue.connect(msg.member.voice.channel);
-    } catch {
-      player.deleteQueue(msg.guild.id);
-      return msg.reply("❌ ไม่สามารถเข้าห้องเสียงได้");
-    }
+    const queue = await player.nodes.create(msg.guild, { metadata: msg.channel });
+    try { if (!queue.connection) await queue.connect(msg.member.voice.channel); } 
+    catch { player.deleteQueue(msg.guild.id); return msg.reply("❌ ไม่สามารถเข้าห้องเสียงได้"); }
 
     queue.addTrack(searchResult.tracks[0]);
     if (!queue.isPlaying()) await queue.node.play();
