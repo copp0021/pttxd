@@ -27,11 +27,20 @@ client.on("messageCreate", async (msg) => {
   if (args[0] === "!play") {
     if (!msg.member.voice.channel) return msg.reply("❌ เข้าห้องเสียงก่อนครับ");
 
-    let query = args.slice(1).join(" ");
+    const query = args.slice(1).join(" ");
     if (!query) return msg.reply("⚠️ ใส่ชื่อเพลงหรือ URL ด้วยครับ");
 
-    const searchResult = await player.search(query, { requestedBy: msg.author });
-    if (!searchResult || !searchResult.tracks.length) return msg.reply("❌ ไม่เจอเพลงนี้");
+    // Search แบบบังคับ YouTube
+    const searchResult = await player.search(query, {
+      requestedBy: msg.author,
+      searchEngine: "youtube"
+    });
+
+    console.log("Query:", query);
+    console.log("SearchResult:", searchResult);
+
+    if (!searchResult || !searchResult.tracks.length)
+      return msg.reply("❌ ไม่เจอเพลงนี้");
 
     const queue = await player.nodes.create(msg.guild, { metadata: msg.channel });
     try {
