@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits } = require("discord.js");
-const { Player } = require("discord-player");
+const { Player, QueryType } = require("discord-player");
 
 const client = new Client({
   intents: [
@@ -32,10 +32,8 @@ client.on("messageCreate", async (msg) => {
     if (!query)
       return msg.reply("⚠️ ใส่ชื่อเพลงหรือ URL ด้วยครับ");
 
-    // สร้าง queue สำหรับ guild
     const queue = await player.nodes.create(msg.guild, { metadata: msg.channel });
 
-    // เข้าห้องเสียงก่อน
     try {
       if (!queue.connection)
         await queue.connect(msg.member.voice.channel);
@@ -45,19 +43,18 @@ client.on("messageCreate", async (msg) => {
       return msg.reply("❌ ไม่สามารถเข้าห้องเสียงได้");
     }
 
-    // Search เพลงแบบ YouTube
+    // Search เพลงจาก YouTube (รองรับ URL หรือ ชื่อเพลง)
     const searchResult = await player.search(query, {
       requestedBy: msg.author,
-      searchEngine: "youtube"
+      searchEngine: QueryType.YOUTUBE
     });
 
     console.log("Query:", query);
-    console.log("SearchResult:", searchResult);
+    console.log("Tracks found:", searchResult.tracks.length);
 
     if (!searchResult || !searchResult.tracks.length)
       return msg.reply("❌ ไม่เจอเพลงนี้");
 
-    // เพิ่มเพลงลง queue และเล่น
     queue.addTrack(searchResult.tracks[0]);
     if (!queue.isPlaying())
       await queue.node.play();
