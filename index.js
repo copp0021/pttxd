@@ -25,12 +25,27 @@ client.on("messageCreate", async (msg) => {
   const args = msg.content.split(" ");
 
   if (args[0] === "!play") {
-    if (!msg.member.voice.channel) return msg.reply("❌ เข้าห้องเสียงก่อนครับ");
+    if (!msg.member.voice.channel)
+      return msg.reply("❌ เข้าห้องเสียงก่อนครับ");
 
     const query = args.slice(1).join(" ");
-    if (!query) return msg.reply("⚠️ ใส่ชื่อเพลงหรือ URL ด้วยครับ");
+    if (!query)
+      return msg.reply("⚠️ ใส่ชื่อเพลงหรือ URL ด้วยครับ");
 
-    // Search แบบบังคับ YouTube
+    // สร้าง queue สำหรับ guild
+    const queue = await player.nodes.create(msg.guild, { metadata: msg.channel });
+
+    // เข้าห้องเสียงก่อน
+    try {
+      if (!queue.connection)
+        await queue.connect(msg.member.voice.channel);
+      console.log(`✅ บอทเข้าห้องเสียง ${msg.member.voice.channel.name}`);
+    } catch {
+      player.deleteQueue(msg.guild.id);
+      return msg.reply("❌ ไม่สามารถเข้าห้องเสียงได้");
+    }
+
+    // Search เพลงแบบ YouTube
     const searchResult = await player.search(query, {
       requestedBy: msg.author,
       searchEngine: "youtube"
@@ -42,16 +57,11 @@ client.on("messageCreate", async (msg) => {
     if (!searchResult || !searchResult.tracks.length)
       return msg.reply("❌ ไม่เจอเพลงนี้");
 
-    const queue = await player.nodes.create(msg.guild, { metadata: msg.channel });
-    try {
-      if (!queue.connection) await queue.connect(msg.member.voice.channel);
-    } catch {
-      player.deleteQueue(msg.guild.id);
-      return msg.reply("❌ ไม่สามารถเข้าห้องเสียงได้");
-    }
-
+    // เพิ่มเพลงลง queue และเล่น
     queue.addTrack(searchResult.tracks[0]);
-    if (!queue.isPlaying()) await queue.node.play();
+    if (!queue.isPlaying())
+      await queue.node.play();
+
     msg.reply(`▶️ กำลังเล่น: **${searchResult.tracks[0].title}**`);
   }
 
